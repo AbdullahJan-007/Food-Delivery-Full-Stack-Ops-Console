@@ -1,0 +1,23 @@
+# Dependencies (each workspace, plus the hoisted root install)
+node_modules/
+**/node_modules/
+
+# Env files — real secrets never get committed, only .env.example / .env.local.example
+.env
+.env.local
+**/.env
+**/.env.local
+
+# Build output
+dist/
+**/dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store

@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/600.css";
+@import "@fontsource/space-grotesk/700.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
+@theme {
+  --color-canvas: #faf9f6;
+  --color-hero-tint: #fff2ea;
+  --color-surface: #ffffff;
+  --color-ink: #17171a;
+  --color-ink-muted: #6b6b72;
+  --color-line: #ebeae7;
+  --color-ember: #ff6b3d;
+  --color-paprika: #e6294f;
+
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}

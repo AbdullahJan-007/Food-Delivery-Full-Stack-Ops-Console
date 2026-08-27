@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Food Delivery API</title>
+  <meta name="description" content="Internal REST API for food delivery operations — menu and order management secured with JWT-based staff and admin authentication." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="top-bar" aria-hidden="true"></div>
+
+  <header class="hero">
+    <div class="container">
+      <div class="status-pill" id="statusPill" role="status">
+        <span class="status-dot" id="statusDot"><span class="status-ring"></span></span>
+        <span id="statusText">Checking API status…</span>
+      </div>
+
+      <h1>Food Delivery <span class="gradient-text">API</span></h1>
+      <p class="hero-subtitle">
+        The operations backend a delivery kitchen actually runs on — menu and
+        order management, gated behind JWT authentication for staff and admins.
+      </p>
+
+      <ul class="badges" aria-label="Tech stack">
+        <li class="badge">Node.js</li>
+        <li class="badge">Express 5</li>
+        <li class="badge">MongoDB</li>
+        <li class="badge">Mongoose</li>
+        <li class="badge">JWT</li>
+      </ul>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Get a token</h2>
+      <ol class="steps">
+        <li><span class="step-num">1</span><span>Log in with a staff or admin account</span></li>
+        <li><span class="step-num">2</span><span>Copy the <code>token</code> from the response</span></li>
+        <li><span class="step-num">3</span><span>Send it as <code>Authorization: Bearer &lt;token&gt;</code> on every request below</span></li>
+      </ol>
+
+      <div class="code-block">
+        <button class="copy-btn" type="button" data-copy-target="loginSnippet">Copy</button>
+        <pre id="loginSnippet"><code>curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@fooddelivery.com","password":"yourpassword"}'</code></pre>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Authentication</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="method post">POST</span></td>
+              <td><code>/api/auth/register</code></td>
+              <td><span class="access public">Public</span></td>
+              <td>Create a staff account</td>
+            </tr>
+            <tr>
+              <td><span class="method post">POST</span></td>
+              <td><code>/api/auth/login</code></td>
+              <td><span class="access public">Public</span></td>
+              <td>Authenticate and receive a JWT</td>
+            </tr>
+            <tr>
+              <td><span class="method get">GET</span></td>
+              <td><code>/api/auth/me</code></td>
+              <td><span class="access private">Staff · Admin</span></td>
+              <td>Get the current authenticated user</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Menu items</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/menu-items</code></td><td><span class="access private">Staff · Admin</span></td><td>List items — filter by category/availability, paginated</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/menu-items/:id</code></td><td><span class="access private">Staff · Admin</span></td><td>Get a single menu item</td></tr>
+            <tr><td><span class="method post">POST</span></td><td><code>/api/menu-items</code></td><td><span class="access admin">Admin</span></td><td>Create a menu item</td></tr>
+            <tr><td><span class="method put">PUT</span></td><td><code>/api/menu-items/:id</code></td><td><span class="access admin">Admin</span></td><td>Update a menu item</td></tr>
+            <tr><td><span class="method delete">DELETE</span></td><td><code>/api/menu-items/:id</code></td><td><span class="access admin">Admin</span></td><td>Delete a menu item</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Orders</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/orders</code></td><td><span class="access private">Staff · Admin</span></td><td>List orders — filter by status, paginated</td></tr>
+            <tr><td><span class="method get">GET</span></td><td><code>/api/orders/:id</code></td><td><span class="access private">Staff · Admin</span></td><td>Get a single order</td></tr>
+            <tr><td><span class="method post">POST</span></td><td><code>/api/orders</code></td><td><span class="access private">Staff · Admin</span></td><td>Place a new order</td></tr>
+            <tr><td><span class="method put">PUT</span></td><td><code>/api/orders/:id</code></td><td><span class="access private">Staff · Admin</span></td><td>Update customer / delivery details</td></tr>
+            <tr><td><span class="method patch">PATCH</span></td><td><code>/api/orders/:id/status</code></td><td><span class="access private">Staff · Admin</span></td><td>Advance the order status</td></tr>
+            <tr><td><span class="method delete">DELETE</span></td><td><code>/api/orders/:id</code></td><td><span class="access admin">Admin</span></td><td>Delete an order</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Built by Abdullah Jan — Node.js · Express · MongoDB · JWT</p>
+  </footer>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>
