@@ -21,7 +21,7 @@ describe('POST /api/menu-items', () => {
 
     assert.equal(res.status, 201);
     assert.equal(res.body.data.name, 'Zinger Burger');
-    assert.equal(res.body.data.isAvailable, true); // schema default
+    assert.equal(res.body.data.isAvailable, true);
   });
 
   test('staff cannot create a menu item — 403', async () => {
@@ -47,37 +47,68 @@ describe('POST /api/menu-items', () => {
   });
 });
 
-describe('GET /api/menu-items', () => {
-  test('staff can list menu items (read is not admin-only)', async () => {
+describe('GET & PUT /api/menu-items', () => {
+  test('staff can list, filter, and search menu items', async () => {
     const { token: adminToken } = await createTestUser({ role: 'admin' });
-    await request(app)
-      .post('/api/menu-items')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Fries', price: 250, category: 'Sides' });
+    await request(app).post('/api/menu-items').set('Authorization', `Bearer ${adminToken}`).send({
+      name: 'Spicy Zinger',
+      description: 'Crispy chicken fillet',
+      price: 650,
+      category: 'Main Course',
+    });
+    await request(app).post('/api/menu-items').set('Authorization', `Bearer ${adminToken}`).send({
+      name: 'Mint Margarita',
+      price: 220,
+      category: 'Beverages',
+    });
 
     const { token: staffToken } = await createTestUser({ role: 'staff' });
-    const res = await request(app).get('/api/menu-items').set('Authorization', `Bearer ${staffToken}`);
 
-    assert.equal(res.status, 200);
-    assert.equal(res.body.data.length, 1);
-    assert.ok(res.body.pagination);
+    const listRes = await request(app)
+      .get('/api/menu-items')
+      .set('Authorization', `Bearer ${staffToken}`);
+    assert.equal(listRes.status, 200);
+    assert.equal(listRes.body.data.length, 2);
+
+    const catRes = await request(app)
+      .get('/api/menu-items?category=Beverages')
+      .set('Authorization', `Bearer ${staffToken}`);
+    assert.equal(catRes.status, 200);
+    assert.equal(catRes.body.data.length, 1);
+    assert.equal(catRes.body.data[0].name, 'Mint Margarita');
+
+    const searchRes = await request(app)
+      .get('/api/menu-items?search=crispy')
+      .set('Authorization', `Bearer ${staffToken}`);
+    assert.equal(searchRes.status, 200);
+    assert.equal(searchRes.body.data.length, 1);
+    assert.equal(searchRes.body.data[0].name, 'Spicy Zinger');
   });
 
-  test('filters by category', async () => {
-    const { token } = await createTestUser({ role: 'admin' });
-    await request(app).post('/api/menu-items').set('Authorization', `Bearer ${token}`).send({
-      name: 'Coke', price: 150, category: 'Beverages',
-    });
-    await request(app).post('/api/menu-items').set('Authorization', `Bearer ${token}`).send({
-      name: 'Fries', price: 250, category: 'Sides',
-    });
-
+  test('rejects invalid category query parameter with 400', async () => {
+    const { token } = await createTestUser({ role: 'staff' });
     const res = await request(app)
-      .get('/api/menu-items?category=Beverages')
+      .get('/api/menu-items?category=InvalidCategory')
       .set('Authorization', `Bearer ${token}`);
+    assert.equal(res.status, 400);
+  });
 
-    assert.equal(res.body.data.length, 1);
-    assert.equal(res.body.data[0].name, 'Coke');
+  test('admin can update a menu item', async () => {
+    const { token } = await createTestUser({ role: 'admin' });
+    const created = await request(app)
+      .post('/api/menu-items')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Fries', price: 250, category: 'Sides' });
+
+    const updated = await request(app)
+      .put(`/api/menu-items/${created.body.data._id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Loaded Fries', price: 399.99, isAvailable: false });
+
+    assert.equal(updated.status, 200);
+    assert.equal(updated.body.data.name, 'Loaded Fries');
+    assert.equal(updated.body.data.price, 399.99);
+    assert.equal(updated.body.data.isAvailable, false);
   });
 });
 
@@ -91,10 +122,14 @@ describe('DELETE /api/menu-items/:id', () => {
 
     const id = created.body.data._id;
 
-    const del = await request(app).delete(`/api/menu-items/${id}`).set('Authorization', `Bearer ${token}`);
+    const del = await request(app)
+      .delete(`/api/menu-items/${id}`)
+      .set('Authorization', `Bearer ${token}`);
     assert.equal(del.status, 200);
 
-    const delAgain = await request(app).delete(`/api/menu-items/${id}`).set('Authorization', `Bearer ${token}`);
+    const delAgain = await request(app)
+      .delete(`/api/menu-items/${id}`)
+      .set('Authorization', `Bearer ${token}`);
     assert.equal(delAgain.status, 404);
   });
 });

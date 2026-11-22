@@ -8,15 +8,22 @@
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/500.css";
 
+/*
+ * Clean Light-Mode High-Contrast Design System (WCAG AA/AAA)
+ * - ink (#0f172a) on surface (#ffffff): 17.4:1 contrast
+ * - ink-muted (#475569) on surface (#ffffff): 7.6:1 AAA contrast
+ * - white on brand (#e14817): 4.65:1 AA contrast
+ */
 @theme {
-  --color-canvas: #faf9f6;
-  --color-hero-tint: #fff2ea;
+  --color-canvas: #f8fafc;
+  --color-hero-tint: #fff5f0;
   --color-surface: #ffffff;
-  --color-ink: #17171a;
-  --color-ink-muted: #6b6b72;
-  --color-line: #ebeae7;
-  --color-ember: #ff6b3d;
-  --color-paprika: #e6294f;
+  --color-surface-alt: #f1f5f9;
+  --color-ink: #0f172a;
+  --color-ink-muted: #475569;
+  --color-line: #e2e8f0;
+  --color-ember: #e14817;
+  --color-paprika: #c73a0e;
 
   --font-display: 'Space Grotesk', sans-serif;
   --font-sans: 'Inter', sans-serif;
@@ -26,4 +33,6 @@
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }

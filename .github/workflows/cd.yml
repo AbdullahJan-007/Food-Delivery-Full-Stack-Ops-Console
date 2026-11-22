@@ -1,0 +1,75 @@
+name: CD — Production Deploy & Health Verification
+
+on:
+  workflow_run:
+    workflows: ["CI — Lint, Typecheck, Test & Build"]
+    types: [completed]
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend API
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger backend deploy hook (Render / Railway)
+        env:
+          BACKEND_DEPLOY_HOOK_URL: ${{ secrets.BACKEND_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$BACKEND_DEPLOY_HOOK_URL" ]; then
+            echo "BACKEND_DEPLOY_HOOK_URL secret not configured — skipping automated backend deploy."
+            exit 0
+          fi
+          curl -fsS -X POST "$BACKEND_DEPLOY_HOOK_URL"
+          echo "Backend deploy hook triggered."
+
+      - name: Verify live backend /health endpoint
+        env:
+          PRODUCTION_API_HEALTH_URL: ${{ secrets.PRODUCTION_API_HEALTH_URL }}
+        run: |
+          if [ -z "$PRODUCTION_API_HEALTH_URL" ]; then
+            echo "PRODUCTION_API_HEALTH_URL secret not configured — skipping live health check."
+            exit 0
+          fi
+          for i in 1 2 3 4 5; do
+            if curl -fsS "$PRODUCTION_API_HEALTH_URL"; then
+              echo "Production API is healthy!"
+              exit 0
+            fi
+            echo "Waiting for backend readiness ($i/5)..."
+            sleep 10
+          done
+          echo "Production API health check failed."
+          exit 1
+
+  deploy-frontend:
+    name: Deploy Frontend Console (Vercel)
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy to Vercel Production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN secret not configured — skipping automated Vercel deploy."
+            exit 0
+          fi
+          npx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx vercel build --prod --token="$VERCEL_TOKEN"
+          npx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

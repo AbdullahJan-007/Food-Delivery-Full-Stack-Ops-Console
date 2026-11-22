@@ -7,10 +7,8 @@ export const ORDER_STATUSES = [
   'cancelled',
 ];
 
-// Each status can only move to the ones listed here. This stops an update
-// from jumping the lifecycle backwards (e.g. "delivered" -> "pending") or
-// sideways into a nonsensical state — a real kitchen/dispatch workflow only
-// ever moves forward or gets cancelled.
+export const TERMINAL_STATUSES = ['delivered', 'cancelled'];
+
 const ALLOWED_TRANSITIONS = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['preparing', 'cancelled'],
@@ -20,7 +18,16 @@ const ALLOWED_TRANSITIONS = {
   cancelled: [],
 };
 
+export function isTerminalStatus(status) {
+  return TERMINAL_STATUSES.includes(status);
+}
+
+export function getAllowedTransitions(status) {
+  return ALLOWED_TRANSITIONS[status] ?? [];
+}
+
 export function isValidStatusTransition(from, to) {
+  if (typeof from !== 'string' || typeof to !== 'string') return false;
   if (from === to) return false;
   return ALLOWED_TRANSITIONS[from]?.includes(to) ?? false;
 }

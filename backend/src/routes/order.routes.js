@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  getOrderStats,
   getOrders,
   getOrder,
   createOrder,
@@ -12,6 +13,9 @@ import { protect, authorize } from '../middleware/auth.middleware.js';
 const router = Router();
 
 router.use(protect);
+
+// Static route must come before /:id so 'stats' is not treated as an ObjectId
+router.get('/stats', getOrderStats);
 
 router.route('/').get(getOrders).post(createOrder);
 

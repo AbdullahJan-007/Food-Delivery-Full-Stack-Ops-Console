@@ -12,7 +12,11 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "seed": "node src/seed/seedAdmin.js",
-    "test": "node --test tests/"
+    "lint": "oxlint src tests",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "test:unit": "node --test \"tests/unit/*.test.js\"",
+    "test:integration": "node --test \"tests/*.test.js\""
   },
   "keywords": [
     "express",

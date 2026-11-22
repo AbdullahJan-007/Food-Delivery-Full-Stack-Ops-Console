@@ -1,4 +1,4 @@
-export default function FormField({ label, error, children }) {
+export default function FormField({ label = undefined, error = undefined, children }) {
   return (
     <div>
       {label && <label className="block text-sm font-medium mb-1.5">{label}</label>}

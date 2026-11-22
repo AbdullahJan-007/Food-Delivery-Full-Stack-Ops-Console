@@ -1,0 +1,75 @@
+name: CI — Lint, Typecheck, Test & Build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Lint · Typecheck · Unit · Integration · Security)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Lint backend (oxlint)
+        run: npm run lint -w backend
+
+      - name: Typecheck backend (tsc --noEmit)
+        run: npm run typecheck -w backend
+
+      - name: Run backend unit tests
+        run: npm run test:unit -w backend
+
+      - name: Run backend integration, SaaS & security tests
+        run: npm run test:integration -w backend
+
+  frontend:
+    name: Frontend (Lint · Typecheck · Unit · Production Build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Lint frontend (oxlint)
+        run: npm run lint -w frontend
+
+      - name: Typecheck frontend (tsc --noEmit)
+        run: npm run typecheck -w frontend
+
+      - name: Run frontend unit tests
+        run: npm run test -w frontend
+
+      - name: Build frontend production bundle
+        run: npm run build -w frontend
+
+      - name: Upload frontend build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7

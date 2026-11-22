@@ -1,89 +1,66 @@
-# Food Delivery — Full-Stack Ops Console
+# Food Delivery — Full-Stack Ops Console (v2.0 Production)
 
 ![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?logo=mongodb&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose%209-47A248?logo=mongodb&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-node%3Atest-blue)
+![CI](https://img.shields.io/badge/tests-unit%20%2B%20integration%20%2B%20security-brightgreen)
 
-A complete internal operations tool for a food delivery startup: staff and admins authenticate
-with JWT, manage the menu, and process orders through a real status lifecycle. Built across
-four stages — REST API, React client, and this final integration pass that brings both into one
-runnable, tested, deployment-ready project.
+A hardened, production-ready internal operations console for a food delivery startup. Staff and admins authenticate with revocable HS256 JWTs, manage the menu catalog, process orders through an atomic guarded lifecycle state machine, monitor live operational KPIs, and administer team access.
 
-## Architecture
+---
 
-```
-                    ┌─────────────────────┐
-  Browser  ───────▶ │  frontend (Vite/React) │  localhost:5173
-                    │  React Router · Context │
-                    └───────────┬─────────┘
-                                │  fetch, JSON, JWT in
-                                │  Authorization header
-                                ▼
-                    ┌─────────────────────┐
-                    │  backend (Express)   │  localhost:5000
-                    │  JWT auth · RBAC      │
-                    │  Mongoose ODM         │
-                    └───────────┬─────────┘
-                                │
-                                ▼
-                    ┌─────────────────────┐
-                    │      MongoDB          │
-                    └─────────────────────┘
-```
+## Documentation Suite
 
-Two independently deployable services, one npm workspace for local development. The frontend
-never talks to MongoDB directly — every read and write goes through the API, which is the only
-thing that enforces auth, roles, price integrity, and the order status lifecycle.
+| Document | Purpose |
+|---|---|
+| [PRD.md](./PRD.md) | Product requirements, RBAC matrix, functional & non-functional specs |
+| [architecture.md](./architecture.md) | System topology, middleware pipeline, ER diagram & full API surface |
+| [design.md](./design.md) | Design tokens, typography, component patterns & accessibility standards |
+| [rules.md](./rules.md) | Non-negotiable security, backend, frontend & release engineering rules |
+| [memory.md](./memory.md) | Technical knowledge base, v1.0 audit findings & runtime gotchas |
+| [tracker.md](./tracker.md) | Live engineering & security remediation tracker |
+| [REPORT.md](./REPORT.md) | Project report & deployment walkthrough |
 
-## Project structure
+---
 
-```
-food-delivery-app/
-├── backend/     Express + MongoDB + JWT API (see backend/README.md)
-├── frontend/    React + Vite client (see frontend/README.md)
-├── package.json npm workspace root — orchestrates both
-└── REPORT.md    Full project report
-```
+## Key Capabilities (v2.0)
 
-## Getting started
+- **Hardened Auth & RBAC**: HS256 algorithm pinning, `issuer`/`audience` claims, `tokenVersion` server-side session revocation (`POST /api/auth/logout`), constant-time login timing protection, and strict role-based access (`staff` vs `admin`).
+- **Defense-in-Depth Security**: Recursive NoSQL operator sanitization (`$` / `.`), strict query/body validation, `http:`/`https:` URL validation on `imageUrl`, Helmet headers, `X-Request-Id` correlation, `10kb` JSON & URL-encoded body limits, proxy-aware rate limiting, and fail-fast production environment validation.
+- **Atomic Order Lifecycle**: Server-side price snapshotting, duplicate line-item consolidation, 2-decimal monetary rounding, `statusHistory` audit trail, terminal order immutability, and atomic optimistic concurrency (`findOneAndUpdate`) on status transitions.
+- **Full Ops Console UI**: Live KPI dashboard (`GET /api/orders/stats`), search & filters on Orders and Menu, inline Menu Item editor, payment method & kitchen notes, Toast notifications, React `ErrorBoundary`, global `401` auto-logout, and Admin Team Management (`/team`).
+- **Automated CI & Testing**: Backend unit tests, integration tests, defensive security regression tests, frontend unit tests, `oxlint`, Vite production build, and GitHub Actions CI (`.github/workflows/ci.yml`).
 
-**Prerequisites:** Node.js 20+, a local MongoDB instance running (or an Atlas connection string).
+---
+
+## Getting Started
+
+**Prerequisites:** Node.js 20+, MongoDB (local or Atlas).
 
 ```bash
-npm install                                   # installs both workspaces from the root
-cp backend/.env.example backend/.env          # fill in MONGODB_URI and JWT_SECRET
-cp frontend/.env.local.example frontend/.env.local   # default already points at localhost:5000
-npm run seed                                  # creates the first admin account (uses backend/.env)
-npm run dev                                   # starts BOTH servers, one command
+npm install
+cp backend/.env.example backend/.env
+cp frontend/.env.local.example frontend/.env.local
+npm run seed
+npm run dev
 ```
 
-`npm run dev` runs backend and frontend together via `concurrently`, labeled and color-coded in
-one terminal. Backend on `localhost:5000`, frontend on `localhost:5173` — no more juggling two
-separate windows.
+- **Backend API**: `http://localhost:5000` (health readiness at `/health`)
+- **Frontend Console**: `http://localhost:5173`
 
-## Testing
+---
+
+## Scripts
 
 ```bash
-npm test
+npm run dev            # Start backend & frontend together (Vite proxies /api -> localhost:5000)
+npm run ci             # Full CI gate: lint + typecheck + backend/frontend tests + production build
+npm run lint           # Lint BOTH backend & frontend with oxlint
+npm run typecheck      # Typecheck BOTH backend & frontend with tsc --noEmit
+npm test               # Run all backend (unit + integration + SaaS + security) & frontend tests
+npm run build          # Build production frontend bundle
+npm run seed           # Seed default SaaS workspace, admin account & starter menu
+docker compose up      # Run MongoDB + Backend + Frontend together in containers
 ```
-
-Runs the backend's automated test suite (`node --test`) against an isolated in-memory MongoDB
-instance (`mongodb-memory-server`) — no real database needed, and nothing touches your real
-data. Covers the routes that actually carry business logic: auth (register/login/RBAC), menu
-item CRUD, and orders (price snapshotting, the status transition guard, delete permissions).
-See `backend/tests/` and `REPORT.md` for what's covered and why.
-
-## Deployment
-
-Backend and frontend deploy as two separate services — see `REPORT.md` → "Deployment" for the
-full walkthrough (env variables per environment, build commands, and a concrete platform
-recommendation for each side).
-
-## Full report
-
-`REPORT.md` — architecture decisions and their reasoning, testing strategy, known trade-offs,
-and the deployment plan. `backend/README.md` and `frontend/README.md` cover their own API
-reference and design notes respectively.

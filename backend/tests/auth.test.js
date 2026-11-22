@@ -33,6 +33,7 @@ describe('POST /api/auth/register', () => {
       role: 'admin',
     });
 
+    assert.equal(res.status, 201);
     assert.equal(res.body.data.user.role, 'staff');
   });
 
@@ -89,8 +90,6 @@ describe('POST /api/auth/login', () => {
     });
 
     assert.equal(res.status, 401);
-    // Same message as a nonexistent email — this asserts the endpoint
-    // doesn't leak which emails are registered.
     assert.equal(res.body.message, 'Invalid email or password');
   });
 
@@ -103,9 +102,19 @@ describe('POST /api/auth/login', () => {
     assert.equal(res.status, 401);
     assert.equal(res.body.message, 'Invalid email or password');
   });
+
+  test('rejects login for a deactivated account with 403', async () => {
+    const { user } = await createTestUser({ role: 'staff', isActive: false });
+    const res = await request(app).post('/api/auth/login').send({
+      email: user.email,
+      password: 'secret123',
+    });
+
+    assert.equal(res.status, 403);
+  });
 });
 
-describe('GET /api/auth/me', () => {
+describe('GET /api/auth/me & POST /api/auth/logout', () => {
   test('returns the current user when authenticated', async () => {
     const { token, user } = await createTestUser({ role: 'admin' });
 
@@ -114,6 +123,25 @@ describe('GET /api/auth/me', () => {
     assert.equal(res.status, 200);
     assert.equal(res.body.data.email, user.email);
     assert.equal(res.body.data.role, 'admin');
+  });
+
+  test('logout immediately revokes the active JWT via tokenVersion', async () => {
+    const { token } = await createTestUser({ role: 'staff' });
+
+    const beforeLogout = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`);
+    assert.equal(beforeLogout.status, 200);
+
+    const logoutRes = await request(app)
+      .post('/api/auth/logout')
+      .set('Authorization', `Bearer ${token}`);
+    assert.equal(logoutRes.status, 200);
+
+    const afterLogout = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`);
+    assert.equal(afterLogout.status, 401);
   });
 
   test('rejects a request with no token', async () => {

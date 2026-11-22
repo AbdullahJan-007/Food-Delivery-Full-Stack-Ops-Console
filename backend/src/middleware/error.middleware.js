@@ -4,10 +4,18 @@ export function notFound(req, res, next) {
   next(new AppError(`Route not found — ${req.method} ${req.originalUrl}`, 404));
 }
 
-// Must be registered last, and must keep all four parameters — that arity
-// is how Express tells an error handler apart from regular middleware.
-export function errorHandler(err, req, res, next) {
+export function errorHandler(err, req, res, _next) {
   let error = err;
+
+  // Malformed JSON body from express.json()
+  if (err instanceof SyntaxError && 'status' in err && err.status === 400 && 'body' in err) {
+    error = new AppError('Malformed JSON in request body', 400);
+  }
+
+  // Request body exceeded configured size limit
+  if (err.type === 'entity.too.large' || err.status === 413) {
+    error = new AppError('Request payload is too large', 413);
+  }
 
   if (err.name === 'CastError') {
     error = new AppError(`Invalid ${err.path}: ${err.value}`, 400);
@@ -18,7 +26,7 @@ export function errorHandler(err, req, res, next) {
     error = new AppError(messages.join('. '), 400);
   }
 
-  if (err.code === 11000) {
+  if (err.code === 11000 && err.keyValue) {
     const field = Object.keys(err.keyValue)[0];
     error = new AppError(`${field} '${err.keyValue[field]}' is already in use`, 409);
   }
@@ -32,17 +40,16 @@ export function errorHandler(err, req, res, next) {
   }
 
   const statusCode = error.statusCode || 500;
-  // Non-operational errors (bugs, unexpected exceptions) never leak their
-  // raw message to the client — only what we deliberately threw as AppError.
   const message = error.isOperational ? error.message : 'Something went wrong on our end';
 
-  if (process.env.NODE_ENV !== 'production') {
-    console.error(err);
+  if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+    console.error(`[${req.requestId ?? '-'}]`, err);
   }
 
   res.status(statusCode).json({
     success: false,
     message,
-    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+    ...(req.requestId && { requestId: req.requestId }),
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 }

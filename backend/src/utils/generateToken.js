@@ -1,13 +1,27 @@
 import jwt from 'jsonwebtoken';
 
+export const JWT_ALGORITHM = 'HS256';
+export const JWT_ISSUER = 'food-delivery-ops-api';
+export const JWT_AUDIENCE = 'food-delivery-ops-client';
+
 /**
- * Signs a JWT carrying the user id and role. Role is embedded so
- * role-gated routes don't need an extra DB round trip just to know
- * what the caller is allowed to do (the auth middleware still re-fetches
- * the user to make sure the account still exists and is active).
+ * Signs an HS256 JWT carrying user id, role, and tokenVersion.
+ * Including tokenVersion enables instant server-side revocation on logout,
+ * role change, or account deactivation without external session storage.
  */
-export function generateToken(userId, role) {
-  return jwt.sign({ id: userId, role }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  });
+export function generateToken(userId, role, tokenVersion = 0) {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not configured');
+  }
+
+  return jwt.sign(
+    { id: String(userId), role, tokenVersion },
+    process.env.JWT_SECRET,
+    {
+      algorithm: JWT_ALGORITHM,
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    }
+  );
 }

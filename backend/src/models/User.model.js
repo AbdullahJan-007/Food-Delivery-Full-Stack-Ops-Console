@@ -3,6 +3,12 @@ import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema(
   {
+    organization: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: [true, 'Organization is required'],
+      index: true,
+    },
     name: {
       type: String,
       required: [true, 'Name is required'],
@@ -15,13 +21,14 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      maxlength: [120, 'Email cannot exceed 120 characters'],
       match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please provide a valid email address'],
     },
     password: {
       type: String,
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
-      select: false, // never returned from a query unless explicitly requested
+      select: false,
     },
     role: {
       type: String,
@@ -32,16 +39,16 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    tokenVersion: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
 
-// Hash on create/change only — re-hashing an already-hashed password on
-// every save (e.g. when just flipping `isActive`) would lock the account out.
-// No `next` parameter here: current Mongoose only supports callback-style
-// next() on non-async middleware. For an async function, Mongoose awaits the
-// returned promise instead — declaring a `next` param and calling it throws
-// "next is not a function", since nothing actually gets bound to it.
+userSchema.index({ organization: 1, role: 1 });
+
 userSchema.pre('save', async function hashPassword() {
   if (!this.isModified('password')) return;
 

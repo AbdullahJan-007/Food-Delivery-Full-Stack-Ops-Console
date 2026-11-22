@@ -1,7 +1,14 @@
 import mongoose from 'mongoose';
+import { MENU_CATEGORIES, MAX_ITEM_PRICE, isSafeHttpUrl } from '../utils/validators.js';
 
 const menuItemSchema = new mongoose.Schema(
   {
+    organization: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: [true, 'Organization is required'],
+      index: true,
+    },
     name: {
       type: String,
       required: [true, 'Menu item name is required'],
@@ -18,10 +25,11 @@ const menuItemSchema = new mongoose.Schema(
       type: Number,
       required: [true, 'Price is required'],
       min: [0, 'Price cannot be negative'],
+      max: [MAX_ITEM_PRICE, `Price cannot exceed ${MAX_ITEM_PRICE}`],
     },
     category: {
       type: String,
-      enum: ['Starters', 'Main Course', 'Desserts', 'Beverages', 'Sides'],
+      enum: MENU_CATEGORIES,
       default: 'Main Course',
     },
     isAvailable: {
@@ -31,7 +39,12 @@ const menuItemSchema = new mongoose.Schema(
     imageUrl: {
       type: String,
       trim: true,
+      maxlength: [500, 'Image URL cannot exceed 500 characters'],
       default: '',
+      validate: {
+        validator: isSafeHttpUrl,
+        message: 'Image URL must be a valid http:// or https:// URL',
+      },
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -42,6 +55,7 @@ const menuItemSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-menuItemSchema.index({ category: 1, isAvailable: 1 });
+menuItemSchema.index({ organization: 1, category: 1, isAvailable: 1 });
+menuItemSchema.index({ organization: 1, name: 1 });
 
 export const MenuItem = mongoose.model('MenuItem', menuItemSchema);
